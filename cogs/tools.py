@@ -10,17 +10,13 @@ from discord.ext import commands
 
 class ToolButtons(discord.ui.View):
 
-    def __init__(self, latency):
-        self.latency = latency
-        super().__init__()
-
     @discord.ui.button(label="Ping", row=0, style=discord.ButtonStyle.primary)
     async def first_button_callback(self, button, interaction):
-        await interaction.response.send_message(f"Pong! {self.latency}ms")
+        await interaction.response.send_message(f"Pong! {round(interaction.client.latency * 1000)}ms")
 
     @discord.ui.button(label="Pong", row=0, style=discord.ButtonStyle.danger)
     async def second_button_callback(self, button, interaction):
-        await interaction.response.send_message(f"Ping! {self.latency}ms")
+        await interaction.response.send_message(f"Ping! {round(interaction.client.latency * 1000)}ms")
 
 class Tools(commands.Cog):
 
@@ -37,7 +33,7 @@ class Tools(commands.Cog):
 
     @discord.slash_command(name = "tools", description = "Quick tools menu") # Create a slash command
     async def tools(self, ctx):
-        await ctx.respond("Pick a choice!", view=ToolButtons(round(self.bot.latency * 1000))) # Send a message with our View class that contains the button
+        await ctx.respond("Pick a choice!", view=ToolButtons()) # Send a message with our View class that contains the button
 
     @discord.slash_command(name = "purge", description = "Clear all messages in this channel")
     @commands.has_any_role('Admin')
@@ -56,9 +52,9 @@ class Tools(commands.Cog):
             return
 
         # otherise delete all messages for the given limit
-        await ctx.respond("Purging messages")
         amount += 1
         await ctx.channel.purge(limit=amount)
+        await ctx.respond(f"{amount} message(s) have been purged")
 
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(Tools(bot)) # add the cog to the bot
