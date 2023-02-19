@@ -39,8 +39,8 @@ class Tools(commands.Cog):
     @commands.has_any_role('Admin')
     async def purge(self, ctx, amount: int, member:discord.Member=None):
         # If a member was specified, delete messages only for that member
-        if member!=None:
-            messages=[]
+        if member != None:
+            messages = []
             async for msg in ctx.channel.history(limit=amount):
                 if len(messages) == amount:
                     break
@@ -48,11 +48,10 @@ class Tools(commands.Cog):
                     messages.append(msg)
 
             await ctx.channel.delete_messages(messages)
-            await ctx.respond(f"{len(messages)} message(s) from {member.mention} have been purged")
+            await ctx.respond(f"{amount} message(s) from {member.mention} have been purged")
             return
 
         # otherise delete all messages for the given limit
-        amount += 1
         await ctx.channel.purge(limit=amount)
         await ctx.respond(f"{amount} message(s) have been purged")
 

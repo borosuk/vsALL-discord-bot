@@ -12,7 +12,8 @@ token = os.getenv("TOKEN")
 bot = discord.Bot()
 cogs_list = [
     'greetings',
-    'tools'
+    'tools',
+    'games'
 ]
 
 for cog in cogs_list:
