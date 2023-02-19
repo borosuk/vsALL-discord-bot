@@ -13,7 +13,7 @@ class Greetings(commands.Cog): # create a class for our cog that inherits from c
 
     @discord.slash_command(description = "Say hello to the bot.") # creates a prefixed command
     async def hello(self, ctx): # all methods now must have both self and ctx parameters
-        await ctx.send(f'Hey {ctx.author.mention}!')
+        await ctx.respond(f'Hey {ctx.author.mention}!')
 
     @discord.slash_command(description = "Say goodbye to the bot.") # we can also add application commands
     async def bye(self, ctx):

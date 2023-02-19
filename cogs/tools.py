@@ -39,5 +39,26 @@ class Tools(commands.Cog):
     async def tools(self, ctx):
         await ctx.respond("Pick a choice!", view=ToolButtons(round(self.bot.latency * 1000))) # Send a message with our View class that contains the button
 
+    @discord.slash_command(name = "purge", description = "Clear all messages in this channel")
+    @commands.has_any_role('Admin')
+    async def purge(self, ctx, amount: int, member:discord.Member=None):
+        # If a member was specified, delete messages only for that member
+        if member!=None:
+            messages=[]
+            async for msg in ctx.channel.history(limit=amount):
+                if len(messages) == amount:
+                    break
+                if msg.author.id == member.id:
+                    messages.append(msg)
+
+            await ctx.channel.delete_messages(messages)
+            await ctx.respond(f"{len(messages)} message(s) from {member.mention} have been purged")
+            return
+
+        # otherise delete all messages for the given limit
+        await ctx.respond("Purging messages")
+        amount += 1
+        await ctx.channel.purge(limit=amount)
+
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(Tools(bot)) # add the cog to the bot
