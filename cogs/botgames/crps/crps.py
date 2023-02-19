@@ -1,10 +1,6 @@
 import discord
 import random
 
-# activeCRPSGames = {}
-player1 = None
-player2 = None
-
 CRPSChoices = {
     'rock': {
         'description': 'sedimentary, igneous, or perhaps even metamorphic',
@@ -103,11 +99,6 @@ def getChoices():
 def getResult(player1, player2):
     gameResult = None
 
-    print(f"[player1.objectName]: {[player1.objectName]}")
-    print(f"CRPSChoices[player2.objectName]['versus']: {CRPSChoices[player2.objectName]['versus']}")
-    print(f"[player2.objectName]: {[player2.objectName]}")
-    print(f"CRPSChoices[player1.objectName]['versus']: {CRPSChoices[player1.objectName]['versus']}")
-
     if player2.objectName in CRPSChoices[player1.objectName]['versus']:
         # player1 wins
         gameResult = {
@@ -176,15 +167,16 @@ class CRPSAcceptChallenge(discord.ui.View):
 
     @discord.ui.button(label="Accept", custom_id = "crps-accept-button", row=0, style=discord.ButtonStyle.success)
     async def accept_button_callback(self, button, interaction):
-        global player1
         player1 = CRPSPlayer(interaction.user.id, self.selection)
 
-        await interaction.response.send_message(f"Crazy Rock Paper Scissors challenge from {interaction.user.mention}", view=CRPSChooseChallenge(), ephemeral = True)
+        await interaction.response.send_message(f"Crazy Rock Paper Scissors challenge from {interaction.user.mention}", view=CRPSChooseChallenge(interaction.message.id, player1), ephemeral = True, delete_after = 10)
 
 
 class CRPSChooseChallenge(discord.ui.View):
-    def __init__(self):
-        super().__init__() # timeout of the view must be set to None
+    def __init__(self, msg_to_del, player1):
+        self.msg_to_del = msg_to_del
+        self.player1 = player1
+        super().__init__()
 
     @discord.ui.select( # the decorator that lets you specify the properties of the select menu
         placeholder = "Choose your object!", # the placeholder text that will be displayed if nothing is selected
@@ -192,9 +184,11 @@ class CRPSChooseChallenge(discord.ui.View):
         max_values = 1, # the maximum number of values that can be selected by the users
         options = getOptions()
     )
-    async def select_challenge_callback(self, select, interaction): # the function called when the user is done selecting options        
-        global player1
-        global player2
+    async def select_challenge_callback(self, select, interaction): # the function called when the user is done selecting options
+        # select.disabled = True # can't use the same response to edit_message(view=self), as we can't send a response after. TODO: fix this.
         player2 = CRPSPlayer(interaction.user.id, select.values[0])
 
-        await interaction.response.send_message(f"{getResult(player1, player2)}")
+        msg = await interaction.channel.fetch_message(self.msg_to_del)
+        await msg.delete()
+
+        await interaction.response.send_message(f"{getResult(self.player1, player2)}")
