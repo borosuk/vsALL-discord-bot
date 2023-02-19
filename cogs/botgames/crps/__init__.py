@@ -1,1 +1,1 @@
-from .crps import CRPSAcceptChallenge
+from .crps import *

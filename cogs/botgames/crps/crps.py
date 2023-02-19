@@ -1,16 +1,7 @@
 import discord
 import random
 
-# Need some values or it fails: discord.errors.HTTPException: 400 Bad Request (error code: 50035): Invalid Form Body
-    # In data.components.0.components.0.options: Must be between 1 and 25 in length.
-OPTIONS = [ # the list of options from which users can choose, a required field
-    discord.SelectOption(
-        label="placeholder",
-        description="placeholder, ignore"
-    )
-]
-
-RPSChoices = {
+CRPSChoices = {
     'rock': {
         'description': 'sedimentary, igneous, or perhaps even metamorphic',
         'emoji': '🪨',
@@ -76,38 +67,80 @@ RPSChoices = {
     }
 }
 
+def getSelection():
+
+    CRPSSelection = discord.Option(
+            str,
+            name = "selection",
+            description = "Pick your object!",
+            choices = getChoices(),
+            required = True,
+            min_values = 1,
+            max_values = 1
+        )
+    
+    return CRPSSelection
+
+
+def getOptions():
+    OPTIONS = []
+
+    for choice in CRPSChoices:
+        OPTIONS.append(
+            formatOption(choice, choice, CRPSChoices[choice]['description'], CRPSChoices[choice]['emoji'])
+        )
+
+    random.shuffle(OPTIONS)
+
+    return OPTIONS
+
+
+def getChoices():
+    CHOICES = []
+
+    for choice in CRPSChoices:
+        CHOICES.append(
+            formatChoice(choice, choice)
+        )
+
+    random.shuffle(CHOICES)
+
+    return CHOICES
+
+
+def formatChoice(name, value):
+    return discord.OptionChoice(
+        name = name.capitalize(),
+        value = value.lower()
+    )
+
+
 def formatOption(label, value, description, emoji=None, default=False):
     return discord.SelectOption(
-        label = label,
-        value = value,
+        label = label.capitalize(),
+        value = value.lower(),
         description = description,
         emoji = emoji,
         default = default
     )
 
-class CRPSAcceptChallenge(discord.ui.View):
 
-    @discord.ui.button(label="Accept", row=0, style=discord.ButtonStyle.success)
+class CRPSAcceptChallenge(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None) # timeout of the view must be set to None
+
+    @discord.ui.button(label="Accept", custom_id = "crps-accept-button", row=0, style=discord.ButtonStyle.success)
     async def accept_button_callback(self, button, interaction):
-        await interaction.response.send_message(f"Crazy Rock papers scissors challenge from {interaction.user.mention}", view=CRPSChooseChallenge())
+        await interaction.response.send_message(f"Crazy Rock papers scissors challenge from {interaction.user.mention}", view=CRPSChooseChallenge(), ephemeral = True)
 
 
 class CRPSChooseChallenge(discord.ui.View):
 
-    def __init__(self):
-        OPTIONS.clear()
-        for choice in RPSChoices:
-            OPTIONS.append(
-                formatOption(choice, choice, RPSChoices[choice]['description'], RPSChoices[choice]['emoji'])
-            )
-        random.shuffle(OPTIONS)
-        super().__init__()
-
     @discord.ui.select( # the decorator that lets you specify the properties of the select menu
-        placeholder = "What is your object of choice?", # the placeholder text that will be displayed if nothing is selected
+        placeholder = "Choose your object!", # the placeholder text that will be displayed if nothing is selected
         min_values = 1, # the minimum number of values that must be selected by the users
         max_values = 1, # the maximum number of values that can be selected by the users
-        options = OPTIONS
+        options = getOptions()
     )
     async def select_challenge_callback(self, select, interaction): # the function called when the user is done selecting options
         await interaction.response.send_message(f"Awesome! I like {select.values[0]} too!")
