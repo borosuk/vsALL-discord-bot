@@ -1,11 +1,15 @@
 import discord
 import random
 
+# activeCRPSGames = {}
+player1 = None
+player2 = None
+
 CRPSChoices = {
     'rock': {
         'description': 'sedimentary, igneous, or perhaps even metamorphic',
         'emoji': '🪨',
-        'responses': {
+        'versus': {
             'virus': 'outwaits',
             'computer': 'smashes',
             'scissors': 'crushes'
@@ -14,7 +18,7 @@ CRPSChoices = {
     'cowboy': {
         'description': 'yeehaw~',
         'emoji': '🤠',
-        'responses': {
+        'versus': {
             'scissors': 'puts away',
             'wumpus': 'lassos',
             'rock': 'steel-toe kicks'
@@ -23,7 +27,7 @@ CRPSChoices = {
     'scissors': {
         'description': 'careful ! sharp ! edges !!',
         'emoji': '✂️',
-        'responses': {
+        'versus': {
             'paper': 'cuts',
             'computer': 'cuts cord of',
             'virus': 'cuts DNA of'
@@ -32,7 +36,7 @@ CRPSChoices = {
     'virus': {
         'description': 'genetic mutation, malware, or something inbetween',
         'emoji': '☣️',
-        'responses': {
+        'versus': {
             'cowboy': 'infects',
             'computer': 'corrupts',
             'wumpus': 'infects'
@@ -41,7 +45,7 @@ CRPSChoices = {
     'computer': {
         'description': 'beep boop beep bzzrrhggggg',
         'emoji': '🖥️',
-        'responses': {
+        'versus': {
             'cowboy': 'overwhelms',
             'paper': 'uninstalls firmware for',
             'wumpus': 'deletes assets for'
@@ -50,7 +54,7 @@ CRPSChoices = {
     'wumpus': {
         'description': 'the purple Discord fella',
         'emoji': '🧸',
-        'responses': {
+        'versus': {
             'paper': 'draws picture on',
             'rock': 'paints cute face on',
             'scissors': 'admires own reflection in'
@@ -59,7 +63,7 @@ CRPSChoices = {
     'paper': {
         'description': 'versatile and iconic',
         'emoji': '📄',
-        'responses': {
+        'versus': {
             'virus': 'ignores',
             'cowboy': 'gives papercut to',
             'rock': 'covers'
@@ -83,29 +87,64 @@ def getSelection():
 
 
 def getOptions():
-    OPTIONS = []
-
-    for choice in CRPSChoices:
-        OPTIONS.append(
-            formatOption(choice, choice, CRPSChoices[choice]['description'], CRPSChoices[choice]['emoji'])
-        )
-
+    OPTIONS = [formatOption(choice, choice, CRPSChoices[choice]['description'], CRPSChoices[choice]['emoji']) for choice in CRPSChoices]
     random.shuffle(OPTIONS)
 
     return OPTIONS
 
 
 def getChoices():
-    CHOICES = []
-
-    for choice in CRPSChoices:
-        CHOICES.append(
-            formatChoice(choice, choice)
-        )
-
+    CHOICES = [formatChoice(choice, choice) for choice in CRPSChoices]
     random.shuffle(CHOICES)
 
     return CHOICES
+
+
+def getResult(player1, player2):
+    gameResult = None
+
+    print(f"[player1.objectName]: {[player1.objectName]}")
+    print(f"CRPSChoices[player2.objectName]['versus']: {CRPSChoices[player2.objectName]['versus']}")
+    print(f"[player2.objectName]: {[player2.objectName]}")
+    print(f"CRPSChoices[player1.objectName]['versus']: {CRPSChoices[player1.objectName]['versus']}")
+
+    if player2.objectName in CRPSChoices[player1.objectName]['versus']:
+        # player1 wins
+        gameResult = {
+            'win': player1,
+            'lose': player2,
+            'verb': CRPSChoices[player1.objectName]['versus'][player2.objectName]
+        }
+    elif player1.objectName in CRPSChoices[player2.objectName]['versus']:
+        # player2 wins
+        gameResult = {
+            'win': player2,
+            'lose': player1,
+            'verb': CRPSChoices[player2.objectName]['versus'][player1.objectName]
+        }
+    else:
+        # tie -- win/lose don't
+        gameResult = {
+            'win': player1,
+            'lose': player2,
+            'verb': 'tie'
+        }
+
+    return formatResult(gameResult)
+    
+
+def formatResult(gameResult):
+    win = gameResult['win']
+    lose = gameResult['lose']
+    verb = gameResult['verb']
+    res = ""
+
+    if gameResult['verb'] == 'tie':
+        res = f"<@{win.id}> and <@{lose.id}> draw with **{win.objectName}**"
+    else:
+        res = f"<@{win.id}>'s **{win.objectName}** {verb} <@{lose.id}>'s **{lose.objectName}**"
+
+    return res
 
 
 def formatChoice(name, value):
@@ -124,17 +163,28 @@ def formatOption(label, value, description, emoji=None, default=False):
         default = default
     )
 
+class CRPSPlayer():
+    def __init__(self, id, objectName):
+        self.id = id
+        self.objectName = objectName
+
 
 class CRPSAcceptChallenge(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None) # timeout of the view must be set to None
+    def __init__(self, selection):
+        self.selection = selection
+        super().__init__(timeout = None) # timeout of the view must be set to None
 
     @discord.ui.button(label="Accept", custom_id = "crps-accept-button", row=0, style=discord.ButtonStyle.success)
     async def accept_button_callback(self, button, interaction):
-        await interaction.response.send_message(f"Crazy Rock papers scissors challenge from {interaction.user.mention}", view=CRPSChooseChallenge(), ephemeral = True)
+        global player1
+        player1 = CRPSPlayer(interaction.user.id, self.selection)
+
+        await interaction.response.send_message(f"Crazy Rock Paper Scissors challenge from {interaction.user.mention}", view=CRPSChooseChallenge(), ephemeral = True)
 
 
 class CRPSChooseChallenge(discord.ui.View):
+    def __init__(self):
+        super().__init__() # timeout of the view must be set to None
 
     @discord.ui.select( # the decorator that lets you specify the properties of the select menu
         placeholder = "Choose your object!", # the placeholder text that will be displayed if nothing is selected
@@ -142,5 +192,9 @@ class CRPSChooseChallenge(discord.ui.View):
         max_values = 1, # the maximum number of values that can be selected by the users
         options = getOptions()
     )
-    async def select_challenge_callback(self, select, interaction): # the function called when the user is done selecting options
-        await interaction.response.send_message(f"Awesome! I like {select.values[0]} too!")
+    async def select_challenge_callback(self, select, interaction): # the function called when the user is done selecting options        
+        global player1
+        global player2
+        player2 = CRPSPlayer(interaction.user.id, select.values[0])
+
+        await interaction.response.send_message(f"{getResult(player1, player2)}")
