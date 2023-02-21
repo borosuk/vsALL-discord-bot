@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# vsALL data
+vsall.sqlite
+vsall.sqlite-journal

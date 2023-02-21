@@ -1,5 +1,6 @@
 import discord
 import random
+import vsalldb
 
 CRPSChoices = {
     'rock': {
@@ -163,19 +164,27 @@ class CRPSPlayer():
 class CRPSAcceptChallenge(discord.ui.View):
     def __init__(self, selection):
         self.selection = selection
+        self.conn = vsalldb.get_connection()
+        self.curs = self.conn.cursor()
         super().__init__(timeout = None) # timeout of the view must be set to None
 
     @discord.ui.button(label="Accept", custom_id = "crps-accept-button", row=0, style=discord.ButtonStyle.success)
     async def accept_button_callback(self, button, interaction):
         player1 = CRPSPlayer(interaction.user.id, self.selection)
+        insertstm = f"INSERT INTO GAMES_CRPS (PLAYER1, PLAYER1_CHOICE) VALUES ({interaction.user.id}, '{self.selection}')"
+        self.curs.execute(insertstm)
+        insertedid = self.curs.lastrowid
 
-        await interaction.response.send_message(f"Crazy Rock Paper Scissors challenge from {interaction.user.mention}", view=CRPSChooseChallenge(interaction.message.id, player1), ephemeral = True, delete_after = 10)
+        await interaction.response.send_message(f"Crazy Rock Paper Scissors challenge from {interaction.user.mention}", view=CRPSChooseChallenge(interaction.message.id, player1, insertedid), ephemeral = True, delete_after = 10)
 
 
 class CRPSChooseChallenge(discord.ui.View):
-    def __init__(self, msg_to_del, player1):
+    def __init__(self, msg_to_del, player1, insertedid):
         self.msg_to_del = msg_to_del
         self.player1 = player1
+        self.insertedid = insertedid
+        self.conn = vsalldb.get_connection()
+        self.curs = self.conn.cursor()
         super().__init__()
 
     @discord.ui.select( # the decorator that lets you specify the properties of the select menu
@@ -191,4 +200,8 @@ class CRPSChooseChallenge(discord.ui.View):
         msg = await interaction.channel.fetch_message(self.msg_to_del)
         await msg.delete()
 
-        await interaction.response.send_message(f"{getResult(self.player1, player2)}")
+        result = getResult(self.player1, player2)
+        updatestm = f'UPDATE GAMES_CRPS SET PLAYER2 = {interaction.user.id}, PLAYER2_CHOICE = "{select.values[0]}", RESULT = "{result}" WHERE ID = {self.insertedid}'
+        self.curs.execute(updatestm)
+
+        await interaction.response.send_message(f"{result}")

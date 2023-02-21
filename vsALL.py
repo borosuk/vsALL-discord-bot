@@ -1,8 +1,5 @@
 import discord
-from discord.commands import Option
-import os # default module
-import json
-import random
+import os
 from dotenv import load_dotenv
 
 load_dotenv() # load all the variables from the env file
